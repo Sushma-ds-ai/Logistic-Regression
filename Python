@@ -1,0 +1,58 @@
+import pandas as pd
+import os
+import matplotlib as plt
+import seaborn as sns
+df = pd.read_excel("satisfaction.xlsx", sheet_name = "satisfaction_v2")
+df.isna().sum().sum()
+df.dropna(inplace = True)
+C1 = df.apply( lambda x: (x - x.min(axis=0)) / (x.max(axis=0) - x.min(axis=0)))
+import numpy as np
+cov_matrix = np.cov(C1.T)
+eigen_values, eigen_vectors = np.linalg.eig(cov_matrix)
+from sklearn.decomposition import PCA
+import matplotlib.pyplot as plt
+pca = PCA(n_components = 16)                      
+pca_trans = pca.fit_transform(C1)  
+prop_var = pca.explained_variance_ratio_   
+PC_number = np.arange(pca.n_components_) + 1 
+var = pca.explained_variance_    
+plt.figure(figsize=(10, 5))                           
+plt.plot(PC_number,                                   
+        var,
+         'ro-')
+plt.title('Scree Plot (Elbow Method)',    
+          fontsize = 15)
+plt.xlabel('Component Number',
+           fontsize = 15)
+plt.ylabel(' Variance',
+           fontsize = 15)
+plt.grid()                                                    
+plt.show()
+pca = PCA(n_components = 4)
+PC = pca.fit_transform(C1)
+loadings = pca.components_.T * np.sqrt(pca.explained_variance_)
+loading_matrix = pd.DataFrame(loadings, columns=['PC1', 'PC2', 'PC3', 'PC4'])
+loading_matrix
+Final_C1 = pd.concat([df1, PCA], axis=1, join='inner')
+display(Final_C1)
+Final_C1.loc[Final_C1['satisfaction_v2'] == 'satisfied', 'satisfaction_v2']= 0
+Final_C1.loc[Final_C1['satisfaction_v2'] == 'neutral or dissatisfied', 'satisfaction_v2']= 1
+Final_C1.drop('id', axis=1,inplace=True)
+Final_C1.drop('Customer Type', axis=1,inplace=True)
+X = Final_C1.iloc[:,6:10]
+Y = Final_C1.iloc[:,0]
+Y=Y.astype('int')
+from sklearn.model_selection import train_test_split
+X_train, X_test, Y_train, Y_test = train_test_split(X,Y, test_size= 0.3, random_state = 42)
+X_test_np = X_test.values
+Y_train_np = Y_train.values
+from sklearn.linear_model import LogisticRegression
+Log_reg = LogisticRegression(random_state = 0).fit(X_train, Y_train)
+Log_reg.predict(X_train)
+import statsmodels.api as sm
+log_clf =sm.Logit(Y_train,X_train)
+classifier = log_clf.fit()
+Y_pred = classifier.predict(X_test)
+print(classifier.summary2())
+with pd.ExcelWriter('PCA Factors.xlsx') as Factors:
+    PCA.to_excel(Factors)
